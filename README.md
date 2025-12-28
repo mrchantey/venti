@@ -3,9 +3,17 @@ Project for window fans automatically controlled by air quality sensors
 
 ## Doug's Objectives
 
+- Collaborate on a concrete project with Peter
+    - learn about Beetmash
+    - learn about automation
+    - learn more about modern collaboration and programming tools
+    - pass my experience where it is useful
+- Automate the operation of the window intakes in my home.
+- Learn more about automating IOT devices.
+
 ## Pete's Objectives
 
-- The [Beet](https://beetstack.dev) project needs concrete projects to guide feature development, both in project management and end product. 
+- The [Beet](https://beetstack.dev) project needs concrete projects to guide feature development, both in project management and end product.
 - Pete would like to develop his interpersonal and collaboration skills, having spent many years building solo.
 
 
