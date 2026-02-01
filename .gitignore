@@ -1,0 +1,61 @@
+# Python virtual environment
+.venv/
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Environments
+.env
+.venv
+ENV/
+env.bak/
+venv.bak/
+
+# Keep .zed/ for project settings
+# (it's checked in to help with Python type checking)
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+*.log

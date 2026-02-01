@@ -1,0 +1,17 @@
+{
+	"[python]": {
+		"editor.defaultFormatter": "charliermarsh.ruff",
+		"editor.formatOnSave": true,
+		"editor.codeActionsOnSave": {
+			"source.fixAll": "explicit",
+		},
+	},
+	"basedpyright.analysis.extraPaths": [".venv/lib/python3.13/site-packages"],
+	"basedpyright.analysis.stubPath": ".venv/lib/python3.13/site-packages",
+	"python.defaultInterpreterPath": ".venv/bin/python",
+	"python.venvPath": ".",
+	"python.analysis.extraPaths": [".venv/lib/python3.13/site-packages"],
+	"python.analysis.stubPath": ".venv/lib/python3.13/site-packages",
+	"ruff.path": [".venv/bin/ruff"],
+	"ruff.importStrategy": "fromEnvironment",
+}

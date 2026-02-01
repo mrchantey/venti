@@ -1,5 +1,6 @@
-from machine import Pin
 import time
+
+from machine import Pin
 
 # ESP32-S3 onboard LED is typically on GPIO48
 # Adjust this pin number if your board uses a different pin

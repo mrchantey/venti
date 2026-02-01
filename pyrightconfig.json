@@ -1,0 +1,13 @@
+{
+  "venvPath": ".",
+  "venv": ".venv",
+  "extraPaths": [
+    ".venv/lib/python3.13/site-packages"
+  ],
+  "stubPath": ".venv/lib/python3.13/site-packages",
+  "typeCheckingMode": "basic",
+  "reportMissingImports": "warning",
+  "reportMissingTypeStubs": false,
+  "pythonVersion": "3.13",
+  "pythonPlatform": "Linux"
+}
