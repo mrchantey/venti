@@ -1,6 +1,8 @@
 # venti
 Project for window fans automatically controlled by air quality sensors
 
+Hi justin! want a drink?
+
 ## Doug's Objectives
 
 - Collaborate on a concrete project with Peter
