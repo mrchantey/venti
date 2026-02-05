@@ -30,3 +30,20 @@ Note that the requirements are intentionally broad statements. Specifications ar
 A leading challenge for this system is keeping the fan noise tolerable whilst providing sufficient ventilation. Informed by DIY air purifiers, a practical solution is to use multiple computer case fans. We can expect these to be readily available for many years and provide reasonable noise to flow-rate performance at a moderate cost. Pulse width modulation (PWM) fans also have speed control that prevents stalling at slow speeds with readily available control electronics. PWM is also moderately amenable to automation.
 
 ## Nukit Model
+
+## Control Requirements
+
+TODO: Move to separate doc
+
+### Controlling Systems
+
+* Home Assistant
+* Controller in the window intake
+
+### Control Considerations
+
+* Over-rides
+  * Physical at the device - at very least it shouldn't be too painful to turn it off then on again. I.e., it should come up to a known state or the state it was last in.
+* Upper limit for noise
+  * Limit more at night?
+* Should any of the sensors be on the intake?
