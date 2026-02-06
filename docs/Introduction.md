@@ -28,6 +28,22 @@ We have chosen to use a markdown and the documentation format because
 * it is very popular and unlikely to be superseded or drop out of favour
 * publishing is relatively easy (Doug thinks Pandoc would get the job done but hasn't explored it yet)
 
+### Diagrams
+
+For simple diagrams: **Mermaid**
+
+* FOSS: [mermaid GitHub | Licence: MIT](https://github.com/mermaid-js/mermaid?tab=MIT-1-ov-file#readme)
+* Text based descriptions
+    * focus on content not beauty
+    * version control friendly
+* Rendered nicely in GitHub and vsCode
+* con: a @Doug hasn't found an exporter that works as of 2026-02-07
+
+For more complex diagram: @Doug likes **drawio**
+
+* FOSS: [drawio GutHub | Licence: Apache 2.0](https://github.com/jgraph/drawio/blob/dev/LICENSE)
+* Con: a bit hard to learn and probably not as good as commercial offerings
+
 ### GitHub
 
 * Git - because it is very popular and stable and well established

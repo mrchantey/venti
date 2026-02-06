@@ -30,3 +30,20 @@ Note that the requirements are intentionally broad statements. Specifications ar
 A leading challenge for this system is keeping the fan noise tolerable whilst providing sufficient ventilation. Informed by DIY air purifiers, a practical solution is to use multiple computer case fans. We can expect these to be readily available for many years and provide reasonable noise to flow-rate performance at a moderate cost. Pulse width modulation (PWM) fans also have speed control that prevents stalling at slow speeds with readily available control electronics. PWM is also moderately amenable to automation.
 
 ## Nukit Model
+
+## Comparison
+
+```mermaid
+---
+title: "Design Criteria"
+---
+radar-beta
+  axis n["Noise"], ci["Initial Cost"], cr["Running Costs"]
+  axis bt["Build Time"], m["Filter Replacement Ease"]
+  axis h["Filtration"]
+  curve a["DIY 1.0"]{60, 20, 40, 90, 70, 70}
+  curve b["Nukit"]  {60, 90, 60, 60, 50, 70}
+
+  max 100
+  min 0
+```
