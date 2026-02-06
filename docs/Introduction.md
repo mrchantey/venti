@@ -26,7 +26,7 @@ We have chosen to use a markdown and the documentation format because
 * version control is easy being text based
 * basic linking of files works - at least in vscode (ctrl-click) and probably many other markdown editors
 * it is very popular and unlikely to be superseded or drop out of favour
-* publishing is relatively easy (Doug thinks Pandoc woud get the job done but hasn't explored it yet)
+* publishing is relatively easy (Doug thinks Pandoc would get the job done but hasn't explored it yet)
 
 ### GitHub
 
@@ -37,3 +37,5 @@ We have chosen to use a markdown and the documentation format because
 
 * Readily accessible and in use for Beetmash
 * We will treat the discussion as ephemeral. Consequential information must be recorded in this documentation system.
+
+[//]: # (This is a way of putting comments in our markdown documentation. They will not be rendered.)

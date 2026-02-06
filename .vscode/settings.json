@@ -14,4 +14,8 @@
 	"python.analysis.stubPath": ".venv/lib/python3.13/site-packages",
 	"ruff.path": [".venv/bin/ruff"],
 	"ruff.importStrategy": "fromEnvironment",
+	"cSpell.words": [
+		"Beetmash",
+		"Nukit"
+	],
 }
