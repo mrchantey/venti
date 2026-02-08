@@ -5,124 +5,105 @@ Control the fan and monitor the potentiometer from Home Assistant using MQTT.
 ## Architecture
 
 ```
-ESP32 <--MQTT--> Mosquitto Broker <--MQTT--> Home Assistant
+ESP32 <--MQTT--> Mosquitto (Docker) <--MQTT--> Home Assistant (Docker)
 ```
 
 The ESP32 publishes sensor data and listens for fan commands over MQTT. Home Assistant discovers the devices automatically via [MQTT Discovery](https://www.home-assistant.io/integrations/mqtt/#mqtt-discovery).
 
+Both Home Assistant and Mosquitto run as Docker containers on your dev machine using `--network=host`, so they share the host's network stack and can talk to each other (and the ESP32) without any port-mapping gymnastics.
+
+> **Note:** The Docker version of Home Assistant does not support Add-ons (like the Mosquitto add-on). That feature is exclusive to Home Assistant OS and Supervised installs. This guide runs Mosquitto as a separate Docker container instead.
+
 ## Prerequisites
 
 - ESP32 flashed with MicroPython (see [setup.md](setup.md))
-- A machine to run Home Assistant (Raspberry Pi, old laptop, VM, etc.)
+- Docker installed on your dev machine
 - All devices on the same local network
 
-## 1. Install Home Assistant
+## Quick Start
 
-Follow the official guide for your platform: [home-assistant.io/installation](https://www.home-assistant.io/installation/)
-
-The simplest options:
-
-| Method | Best for |
-|--------|----------|
-| **Home Assistant OS** | Dedicated Raspberry Pi or mini PC — full experience, easiest |
-| **Docker container** | Running alongside other services on a Linux box |
-| **Home Assistant Core** | Python venv install, most manual but lightest weight |
-
-### Docker (quick start)
+A single script handles everything:
 
 ```sh
-docker run -d \
-  --name homeassistant \
-  --restart=unless-stopped \
-  -v /opt/homeassistant:/config \
-  -e TZ=Australia/Sydney \
-  --network=host \
-  ghcr.io/home-assistant/home-assistant:stable
+./home-assistant.sh          # Start Home Assistant + Mosquitto
+./home-assistant.sh stop     # Tear down containers
+./home-assistant.sh status   # Check container health
+./home-assistant.sh test     # Verify MQTT pub/sub works
 ```
 
-Open **http://\<your-ip\>:8123** and create an account.
+### What the script does
 
-## 2. Install Mosquitto MQTT Broker
+1. Stops and removes any existing `homeassistant` / `mosquitto` containers
+2. Creates a Mosquitto config at `/opt/mosquitto/config/mosquitto.conf` (anonymous access, persistence enabled)
+3. Starts Mosquitto via `eclipse-mosquitto:2` with `--network=host`
+4. Starts Home Assistant via `ghcr.io/home-assistant/home-assistant:stable` with `--network=host`
+5. Waits for both services to be ready
+6. Runs a quick MQTT sanity check
+7. Prints your host IP and next steps
 
-Home Assistant needs an MQTT broker. Mosquitto is the standard choice.
+## Step-by-Step Setup
 
-### Option A: Mosquitto Add-on (Home Assistant OS / Supervised)
-
-1. Go to **Settings → Add-ons → Add-on Store**
-2. Search for **Mosquitto broker** and install it
-3. Start the add-on
-4. The broker is automatically configured for Home Assistant
-
-### Option B: Standalone Mosquitto (Docker or bare metal)
+### 1. Run the script
 
 ```sh
-# Arch Linux
-sudo pacman -S mosquitto
-sudo systemctl enable --now mosquitto
-
-# Debian / Ubuntu
-sudo apt install mosquitto mosquitto-clients
-sudo systemctl enable --now mosquitto
+./home-assistant.sh
 ```
 
-Create a password file for authentication:
-
-```sh
-sudo mosquitto_passwd -c /etc/mosquitto/passwd homeassistant
-```
-
-Add to `/etc/mosquitto/mosquitto.conf`:
+You'll see output like:
 
 ```
-listener 1883
-allow_anonymous false
-password_file /etc/mosquitto/passwd
+======================================
+  🌬️  Venti — Home Assistant Setup
+======================================
+
+✓ Mosquitto is listening on port 1883
+✓ Home Assistant is ready
+✓ MQTT broker accepts messages
+
+======================================
+  ✅  Everything is running
+======================================
+
+  Home Assistant:  http://localhost:8123
+                   http://192.168.86.220:8123
+  MQTT Broker:     192.168.86.220:1883
 ```
 
-Restart:
+### 2. Create a Home Assistant account
 
-```sh
-sudo systemctl restart mosquitto
-```
+Open **http://localhost:8123** in your browser. On first launch you'll be walked through onboarding — create a user account and pick your location/units.
 
-Test it works:
-
-```sh
-# Terminal 1: subscribe
-mosquitto_sub -h localhost -u homeassistant -P <password> -t "test/#"
-
-# Terminal 2: publish
-mosquitto_pub -h localhost -u homeassistant -P <password> -t "test/hello" -m "world"
-```
-
-## 3. Configure Home Assistant MQTT Integration
+### 3. Add the MQTT integration
 
 1. Go to **Settings → Devices & Services → Add Integration**
 2. Search for **MQTT**
 3. Enter the broker details:
-   - **Broker**: `localhost` (if using the add-on) or the broker's IP
+   - **Broker**: `localhost`
    - **Port**: `1883`
-   - **Username**: `homeassistant`
-   - **Password**: the password you set
+   - **Username**: *(leave blank)*
+   - **Password**: *(leave blank)*
+4. Click **Submit**
 
 Home Assistant will now listen for MQTT discovery messages.
 
-## 4. Configure the ESP32
+### 4. Configure the ESP32
 
-Add MQTT credentials to your `.env` file:
+Add MQTT credentials to your `.env` file (the script prints your host IP):
 
 ```
 WIFI_SSID=your-wifi-name
 WIFI_PASSWORD=your-wifi-password
-MQTT_BROKER=192.168.1.100
+MQTT_BROKER=192.168.86.220
 MQTT_PORT=1883
-MQTT_USER=homeassistant
-MQTT_PASSWORD=your-mqtt-password
+MQTT_USER=
+MQTT_PASSWORD=
 ```
 
-Replace `MQTT_BROKER` with the IP address of the machine running Mosquitto.
+Replace `MQTT_BROKER` with the IP address shown in the script output.
 
-### Install umqtt on the board
+> Mosquitto is configured with `allow_anonymous true`, so credentials are optional. If you set `MQTT_USER` / `MQTT_PASSWORD` in `.env`, the broker will still accept the connection — it just ignores the credentials.
+
+### 5. Install umqtt on the board
 
 The `umqtt.simple` library is needed for MQTT. Install it via the MicroPython REPL:
 
@@ -140,22 +121,22 @@ mip.install("umqtt.simple")
 
 Press `Ctrl-A` then `K` to exit screen.
 
-### Upload and run
+### 6. Upload and run
 
 ```sh
 # Upload .env to the board
 ampy --port /dev/ttyACM0 put .env
 
 # Run the example
-ampy --port /dev/ttyACM0 run examples/micropython/hello-home-assistant.py
+./run.sh examples/micropython/hello-home-assistant.py
 ```
 
 You should see output like:
 
 ```
 Already connected to your-wifi-name
-  IP: 192.168.1.42
-Connecting to MQTT broker 192.168.1.100:1883... OK
+  IP: 192.168.86.42
+Connecting to MQTT broker 192.168.86.220:1883... OK
 Publishing Home Assistant discovery configs...
   Discovery >> homeassistant/sensor/.../pot/config
   Discovery >> homeassistant/fan/.../fan/config
@@ -196,7 +177,7 @@ Once the ESP32 is running, Home Assistant auto-discovers two entities:
 Example: turn on the fan when the pot goes above 75%.
 
 1. Go to **Settings → Automations & Scenes → Create Automation**
-2. **Trigger**: State → Potentiometer → Above 75
+2. **Trigger**: Numeric state → Potentiometer → Above 75
 3. **Action**: Call service → `fan.turn_on` → target the fan entity, set percentage to pot value
 4. Save
 
@@ -216,21 +197,69 @@ Or in YAML (`automations.yaml`):
         percentage: "{{ states('sensor.venti_esp32_potentiometer') | int }}"
 ```
 
+## Managing the Services
+
+### Check status
+
+```sh
+./home-assistant.sh status
+```
+
+### Stop everything
+
+```sh
+./home-assistant.sh stop
+```
+
+### Test MQTT independently
+
+```sh
+# Via the script
+./home-assistant.sh test
+
+# Or manually using mosquitto tools inside the container
+docker exec mosquitto mosquitto_sub -h localhost -t "venti/#" -v
+
+# In another terminal, publish a test message
+docker exec mosquitto mosquitto_pub -h localhost -t "venti/test" -m "hello"
+```
+
+### View logs
+
+```sh
+docker logs -f mosquitto       # Mosquitto logs
+docker logs -f homeassistant   # Home Assistant logs
+```
+
+### Data persistence
+
+| Service | Config/data location |
+|---------|---------------------|
+| Home Assistant | `/opt/homeassistant` |
+| Mosquitto config | `/opt/mosquitto/config/mosquitto.conf` |
+| Mosquitto data | `/opt/mosquitto/data` |
+
+These directories persist across container restarts. To start completely fresh, stop the containers and delete these directories.
+
 ## Troubleshooting
 
 ### ESP32 can't connect to MQTT
 
-- Verify the broker IP is correct: `ping 192.168.1.100` from another machine
+- Verify the broker IP is correct — use the IP printed by `./home-assistant.sh`, not `localhost`
 - Check Mosquitto is listening: `ss -tlnp | grep 1883`
-- Test credentials: `mosquitto_pub -h <broker-ip> -u homeassistant -P <pass> -t test -m hi`
-- If using a firewall, open port 1883: `sudo ufw allow 1883` or equivalent
+- Test from the host: `docker exec mosquitto mosquitto_pub -h localhost -t test -m hi`
+- Make sure the ESP32 and your machine are on the same WiFi network
 
 ### Devices don't appear in Home Assistant
 
-- Make sure the MQTT integration is set up (Settings → Devices & Services)
+- Make sure the MQTT integration is added (Settings → Devices & Services)
 - Check that discovery is enabled (it is by default)
-- Monitor discovery topics: `mosquitto_sub -h localhost -u homeassistant -P <pass> -t "homeassistant/#"`
+- Monitor discovery topics: `docker exec mosquitto mosquitto_sub -h localhost -t "homeassistant/#" -v`
 - Restart the ESP32 — it re-publishes discovery on startup
+
+### Home Assistant shows "Add-ons" missing
+
+This is expected — the Docker installation of Home Assistant does not support Add-ons. That's why this guide runs Mosquitto as a separate Docker container. You don't need Add-ons for this setup.
 
 ### Stale entities after reflashing
 
@@ -248,12 +277,16 @@ Home Assistant caches discovered devices. To clean up:
 
 ```sh
 # Turn fan on
-mosquitto_pub -h <broker> -u homeassistant -P <pass> \
-  -t "venti/<device-id>/fan/set" -m "ON"
+docker exec mosquitto mosquitto_pub \
+  -h localhost -t "venti/<device-id>/fan/set" -m "ON"
 
 # Set speed to 50%
-mosquitto_pub -h <broker> -u homeassistant -P <pass> \
-  -t "venti/<device-id>/fan/speed/set" -m "50"
+docker exec mosquitto mosquitto_pub \
+  -h localhost -t "venti/<device-id>/fan/speed/set" -m "50"
 ```
 
 Find your device ID in the ESP32's serial output on startup.
+
+### Port conflicts
+
+If port 1883 or 8123 is already in use, stop the conflicting service or edit the port variables at the top of `home-assistant.sh`.

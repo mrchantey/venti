@@ -106,8 +106,8 @@ def connect_mqtt(broker, port, user, password):
         DEVICE_ID,
         broker,
         port=port,
-        user=user,
-        password=password,
+        user=user or None,
+        password=password or None,
         keepalive=60,
     )
     client.set_last_will(AVAILABILITY_TOPIC, "offline", retain=True)
