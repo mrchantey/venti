@@ -73,6 +73,43 @@ wait_for_ha() {
     return 0
 }
 
+open_firewall() {
+    # Check if ufw is active; if so, ensure MQTT and HA ports are open on the LAN
+    if ! command -v ufw &>/dev/null; then
+        return 0
+    fi
+
+    local ufw_status
+    ufw_status=$(sudo ufw status 2>/dev/null || true)
+    if ! echo "$ufw_status" | grep -qi "Status: active"; then
+        return 0
+    fi
+
+    info "UFW firewall is active — checking port rules..."
+
+    local subnet
+    subnet=$(ip -4 route show dev "$(ip -4 route get 1.1.1.1 | grep -oP 'dev \K\S+')" \
+             | grep -oP '[\d.]+/\d+' | head -1)
+    if [ -z "$subnet" ]; then
+        subnet="192.168.0.0/16"
+    fi
+
+    for rule in "${MQTT_PORT}/tcp:MQTT broker" "${HA_PORT}/tcp:Home Assistant"; do
+        local port="${rule%%:*}"
+        local label="${rule##*:}"
+        if echo "$ufw_status" | grep -q "${port%%/*}"; then
+            ok "${label} port ${port} already allowed"
+        else
+            info "Opening ${label} port ${port} from ${subnet}..."
+            sudo ufw allow from "$subnet" to any port "${port%%/*}" proto "${port##*/}" \
+                 comment "Venti – ${label}" >/dev/null 2>&1 \
+                && ok "Allowed ${port} from ${subnet}" \
+                || warn "Could not open ${port} — run manually:\n  sudo ufw allow from ${subnet} to any port ${port%%/*} proto ${port##*/}"
+        fi
+    done
+    echo ""
+}
+
 # ---------------------------------------------------------------------------
 # stop — tear down containers
 # ---------------------------------------------------------------------------
@@ -189,6 +226,11 @@ MQTTCONF
 
     wait_for_port "$MQTT_PORT" "Mosquitto" 15
     echo ""
+
+    # ------------------------------------------------------------------
+    # 3b. Open firewall ports (if ufw is active)
+    # ------------------------------------------------------------------
+    open_firewall
 
     # ------------------------------------------------------------------
     # 4. Start Home Assistant

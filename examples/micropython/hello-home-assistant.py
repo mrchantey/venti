@@ -51,6 +51,7 @@ HA_DISCOVERY_PREFIX = "homeassistant"
 # --- Fan state ---
 fan_on = False
 fan_speed = 0  # 0-100 percentage
+pot_controls_fan = True  # True = pot knob drives fan speed locally
 
 
 def load_env(path=".env"):
@@ -100,7 +101,7 @@ def connect_wifi(ssid, password, timeout_s=15):
     return wlan
 
 
-def connect_mqtt(broker, port, user, password):
+def connect_mqtt(broker, port, user, password, timeout_s=10):
     """Connect to the MQTT broker and return the client."""
     client = MQTTClient(
         DEVICE_ID,
@@ -114,7 +115,13 @@ def connect_mqtt(broker, port, user, password):
     client.set_callback(on_mqtt_message)
 
     print(f"Connecting to MQTT broker {broker}:{port}...", end="")
-    client.connect()
+    try:
+        client.connect()
+    except OSError as e:
+        print(f" FAILED ({e})")
+        print(f"  Could not reach broker at {broker}:{port}")
+        print(f"  Check MQTT_BROKER in .env matches your host IP")
+        raise SystemExit
     print(" OK")
 
     return client
@@ -122,7 +129,7 @@ def connect_mqtt(broker, port, user, password):
 
 def on_mqtt_message(topic, msg):
     """Handle incoming MQTT messages (fan commands from Home Assistant)."""
-    global fan_on, fan_speed
+    global fan_on, fan_speed, pot_controls_fan
 
     topic = topic.decode()
     msg = msg.decode()
@@ -131,14 +138,24 @@ def on_mqtt_message(topic, msg):
 
     if topic == FAN_COMMAND_TOPIC:
         fan_on = msg == "ON"
+        if fan_on:
+            # HA turned fan on — stop pot from overriding
+            pot_controls_fan = False
+        else:
+            # HA turned fan off — let pot resume control
+            pot_controls_fan = True
+            fan_speed = 0
         apply_fan()
 
     elif topic == FAN_SPEED_COMMAND_TOPIC:
         try:
-            fan_speed = max(0, min(100, int(msg)))
+            fan_speed = max(0, min(100, int(float(msg))))
         except ValueError:
             print(f"  Invalid speed value: {msg}")
             return
+        # HA sent a speed — stop pot from overriding
+        pot_controls_fan = False
+        fan_on = fan_speed > 0
         apply_fan()
 
 
@@ -195,12 +212,13 @@ def publish_ha_discovery(client):
     print(f"  Discovery >> {fan_discovery_topic}")
 
 
-def publish_state(client):
-    """Publish current pot and fan state to MQTT."""
-    # Read pot as percentage (0-100)
-    pot_raw = pot.read_u16()
-    pot_pct = int(pot_raw * 100 / 65535)
+def read_pot():
+    """Read potentiometer as a percentage 0-100."""
+    return int(pot.read_u16() * 100 / 65535)
 
+
+def publish_state(client, pot_pct):
+    """Publish current pot and fan state to MQTT."""
     client.publish(POT_STATE_TOPIC, str(pot_pct))
     client.publish(FAN_STATE_TOPIC, "ON" if fan_on else "OFF")
     client.publish(FAN_SPEED_STATE_TOPIC, str(fan_speed))
@@ -245,19 +263,42 @@ def main():
     print("Streaming pot readings and listening for fan commands...\n")
 
     # --- Main loop ---
+    global fan_on, fan_speed, pot_controls_fan
     last_publish = 0
+    last_pot_pct = -1
+    prev_fan_speed = -1
     while True:
         # Check for incoming MQTT messages (non-blocking)
         client.check_msg()
 
+        # Read potentiometer
+        pot_pct = read_pot()
+
+        # When pot_controls_fan is True, the knob directly drives fan speed.
+        # Turning the pot also reclaims control from HA overrides.
+        if pot_controls_fan:
+            fan_speed = pot_pct
+            fan_on = pot_pct > 0
+        elif abs(pot_pct - last_pot_pct) > 5 and last_pot_pct >= 0:
+            # Pot moved significantly — reclaim local control from HA
+            pot_controls_fan = True
+            fan_speed = pot_pct
+            fan_on = pot_pct > 0
+
+        # Only update PWM when speed actually changed
+        if fan_speed != prev_fan_speed:
+            apply_fan()
+            prev_fan_speed = fan_speed
+
+        last_pot_pct = pot_pct
+
         now = time.time()
         if now - last_publish >= 1:
-            publish_state(client)
+            publish_state(client, pot_pct)
             last_publish = now
 
-            pot_raw = pot.read_u16()
-            pot_pct = int(pot_raw * 100 / 65535)
-            print(f"  pot={pot_pct}%  fan={'ON' if fan_on else 'OFF'}@{fan_speed}%")
+            mode = "POT" if pot_controls_fan else "HA"
+            print(f"  pot={pot_pct}%  fan={'ON' if fan_on else 'OFF'}@{fan_speed}%  mode={mode}")
 
         time.sleep(0.1)
 

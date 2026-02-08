@@ -4,6 +4,9 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SCRIPT="${1:-examples/micropython/blinky.py}"
 
+# ampy times out on long-running scripts by default — disable the run timeout
+export AMPY_RUNTIMEOUT="${AMPY_RUNTIMEOUT:-0}"
+
 # Activate virtual environment
 if [ ! -d "$SCRIPT_DIR/.venv" ]; then
     echo "❌ Virtual environment not found. Run ./setup.sh first."
@@ -33,6 +36,13 @@ PORT=$(detect_port) || {
 }
 
 echo "📡 Found device on $PORT"
+
+# Upload .env to the board if it exists in the project root
+if [ -f "$SCRIPT_DIR/.env" ]; then
+    echo "📝 Uploading .env to device..."
+    ampy --port "$PORT" put "$SCRIPT_DIR/.env"
+fi
+
 echo "🚀 Running $SCRIPT on device..."
 echo "   (Press Ctrl+C to stop)"
 echo ""
