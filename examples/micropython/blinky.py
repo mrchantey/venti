@@ -1,4 +1,6 @@
+# Simple LED blink example for ESP32-S3 using MicroPython
 import time
+
 
 from machine import Pin
 

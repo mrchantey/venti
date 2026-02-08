@@ -1,3 +1,7 @@
+# Example code to control a fan speed using a potentiometer
+# ```sh
+# ampy --port /dev/ttyACM0 run examples/micropython/pot-fan.py
+# ```
 import time
 
 from machine import ADC, PWM, Pin
