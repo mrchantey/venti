@@ -10,6 +10,8 @@ dependencies = []
 dev = [
     "micropython-esp32-stubs",
     "ruff",
+    "esptool",
+    "adafruit-ampy",
 ]
 
 [tool.pyright]
