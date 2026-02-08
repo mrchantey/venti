@@ -1,6 +1,8 @@
-# MicroPython Setup
+# MicroPython Setup — Detailed Reference
 
 This guide covers everything needed to develop and deploy MicroPython code to an ESP32-S3 board.
+
+> **Quick Start?** See [index.md](index.md) for a streamlined quickstart guide.
 
 ## Prerequisites
 
@@ -20,35 +22,50 @@ sudo usermod -a -G dialout $USER
 
 ## Quick Start
 
-Run the setup script to install everything, flash the firmware, and run blinky:
+The setup process is split into two scripts:
 
 ```bash
-./setup.sh
+# 1. Set up your PC (one-time)
+./scripts/pc-setup.sh
+
+# 2. Flash your ESP32 device (once per device)
+./scripts/esp32-setup.sh
 ```
 
-This single command will:
+### PC Setup (`pc-setup.sh`)
 
-1. Create a Python virtual environment (`.venv/`)
-2. Install all dependencies (stubs, esptool, ampy, dev tools)
-3. Detect your ESP32-S3's serial port
-4. Download MicroPython firmware (if not already cached)
-5. Erase the board's flash
-6. Write the MicroPython firmware
-7. Run `blinky.py` on the device
+This script sets up your development environment:
+
+1. Creates a Python virtual environment (`.venv/`)
+2. Installs all dependencies (stubs, esptool, ampy, dev tools)
+
+**Run this once** before doing any ESP32 development.
+
+### ESP32 Setup (`esp32-setup.sh`)
+
+This script flashes MicroPython firmware to your device:
+
+1. Detects your ESP32-S3's serial port
+2. Downloads MicroPython firmware (if not already cached)
+3. Erases the board's flash
+4. Writes the MicroPython firmware
+5. Runs `blinky.py` to verify the setup
+
+**Run this once per device** (or when updating firmware).
 
 ## Running Code
 
-Once setup is complete, use `run.sh` to deploy and run code on the device:
+Once setup is complete, use `scripts/run.sh` to deploy and run code on the device:
 
 ```bash
 # Run the default blinky example
-./run.sh
+./scripts/run.sh
 
 # Run a specific script
-./run.sh examples/micropython/my_script.py
+./scripts/run.sh examples/micropython/my_script.py
 ```
 
-The run script auto-detects the serial port each time.
+The run script auto-detects the serial port each time and uploads your `.env` file if present.
 
 ## What Gets Installed
 
@@ -63,7 +80,7 @@ All tools are installed into the `.venv/` virtual environment — nothing is ins
 
 ## Manual Steps (Reference)
 
-If you prefer to do things manually instead of using `setup.sh`:
+If you prefer to do things manually instead of using the setup scripts:
 
 ### 1. Set Up Virtual Environment
 
@@ -129,7 +146,7 @@ python -m serial.tools.miniterm /dev/ttyACM0 115200
 
 ## Editor Setup
 
-After running `./setup.sh`, restart your editor. MicroPython imports like `from machine import Pin` should resolve without errors.
+After running `./scripts/pc-setup.sh`, restart your editor. MicroPython imports like `from machine import Pin` should resolve without errors.
 
 For Zed specifically:
 1. Completely quit and restart Zed (not just reload window)
@@ -164,7 +181,7 @@ Add your user to the appropriate group (see [Prerequisites](#prerequisites)) and
 
 ### "Import machine could not be resolved" in editor
 
-1. Make sure you ran `./setup.sh`
+1. Make sure you ran `./scripts/pc-setup.sh`
 2. Verify stubs are installed: `source .venv/bin/activate && pip list | grep micropython`
 3. Restart your editor completely
 4. Run validation: `source .venv/bin/activate && python validate_setup.py`

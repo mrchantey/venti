@@ -25,10 +25,10 @@ Both Home Assistant and Mosquitto run as Docker containers on your dev machine u
 A single script handles everything:
 
 ```sh
-./home-assistant.sh          # Start Home Assistant + Mosquitto
-./home-assistant.sh stop     # Tear down containers
-./home-assistant.sh status   # Check container health
-./home-assistant.sh test     # Verify MQTT pub/sub works
+./scripts/home-assistant.sh          # Start Home Assistant + Mosquitto
+./scripts/home-assistant.sh stop     # Tear down containers
+./scripts/home-assistant.sh status   # Check container health
+./scripts/home-assistant.sh test     # Verify MQTT pub/sub works
 ```
 
 ### What the script does
@@ -37,16 +37,17 @@ A single script handles everything:
 2. Creates a Mosquitto config at `/opt/mosquitto/config/mosquitto.conf` (anonymous access, persistence enabled)
 3. Starts Mosquitto via `eclipse-mosquitto:2` with `--network=host`
 4. Starts Home Assistant via `ghcr.io/home-assistant/home-assistant:stable` with `--network=host`
-5. Waits for both services to be ready
-6. Runs a quick MQTT sanity check
-7. Prints your host IP and next steps
+5. Opens firewall ports if ufw is active
+6. Waits for both services to be ready
+7. Runs a quick MQTT sanity check
+8. Prints your host IP and next steps
 
 ## Step-by-Step Setup
 
 ### 1. Run the script
 
 ```sh
-./home-assistant.sh
+./scripts/home-assistant.sh
 ```
 
 You'll see output like:
@@ -124,11 +125,8 @@ Press `Ctrl-A` then `K` to exit screen.
 ### 6. Upload and run
 
 ```sh
-# Upload .env to the board
-ampy --port /dev/ttyACM0 put .env
-
-# Run the example
-./run.sh examples/micropython/hello-home-assistant.py
+# Run the example (run.sh automatically uploads .env)
+./scripts/run.sh examples/micropython/hello-home-assistant.py
 ```
 
 You should see output like:
@@ -202,20 +200,20 @@ Or in YAML (`automations.yaml`):
 ### Check status
 
 ```sh
-./home-assistant.sh status
+./scripts/home-assistant.sh status
 ```
 
 ### Stop everything
 
 ```sh
-./home-assistant.sh stop
+./scripts/home-assistant.sh stop
 ```
 
 ### Test MQTT independently
 
 ```sh
 # Via the script
-./home-assistant.sh test
+./scripts/home-assistant.sh test
 
 # Or manually using mosquitto tools inside the container
 docker exec mosquitto mosquitto_sub -h localhost -t "venti/#" -v
@@ -245,7 +243,7 @@ These directories persist across container restarts. To start completely fresh, 
 
 ### ESP32 can't connect to MQTT
 
-- Verify the broker IP is correct — use the IP printed by `./home-assistant.sh`, not `localhost`
+- Verify the broker IP is correct — use the IP printed by `./scripts/home-assistant.sh`, not `localhost`
 - Check Mosquitto is listening: `ss -tlnp | grep 1883`
 - Test from the host: `docker exec mosquitto mosquitto_pub -h localhost -t test -m hi`
 - Make sure the ESP32 and your machine are on the same WiFi network
@@ -289,4 +287,4 @@ Find your device ID in the ESP32's serial output on startup.
 
 ### Port conflicts
 
-If port 1883 or 8123 is already in use, stop the conflicting service or edit the port variables at the top of `home-assistant.sh`.
+If port 1883 or 8123 is already in use, stop the conflicting service or edit the port variables at the top of `scripts/home-assistant.sh`.
