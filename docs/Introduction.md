@@ -37,7 +37,7 @@ For simple diagrams: **Mermaid**
     * focus on content not beauty
     * version control friendly
 * Rendered nicely in GitHub and vsCode
-* con: a @Doug hasn't found an exporter that works as of 2026-02-07
+* Can be rendered to PDF or HTML using `pandoc -F mermaid-filter.cmd` (`.cmd` not needed for Linux)
 
 For more complex diagram: @Doug likes **drawio**
 
